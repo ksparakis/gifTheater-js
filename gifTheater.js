@@ -1,10 +1,235 @@
+// HERE is an example of a screenplay, the screen play is the object that tells the code what gif to play at what time
+//  along with all the options. more details to come soon and screen play verification
+//
+// var screenPlay = {
+//     "screen_id": "GifTheaterScreen",
+//     "screen_class": "center-fit",
+//     "random_play": true,
+//     "scenes": [
+//         {
+//             "title": "hi",
+//             "duration": 10,
+//             "preview": "imgs/preview.gif",
+//             "img": "imgs/K-Tap-Hi.gif",
+//             "description": "waves hi",
+//             "random_replay": 1,
+//             "starting_scene": true
+//         },
+//         {
+//             "title": "tap-1",
+//             "duration": 10,
+//             "preview": "imgs/preview.gif",
+//             "img": "imgs/K-Tap-1.gif",
+//             "description": "just programing, shorter duration",
+//             "random_replay": Infinity
+//         },
+//         {
+//             "title": "tap-2",
+//             "duration": 20,
+//             "preview": "imgs/preview.gif",
+//             "img": "imgs/K-Tap-2.gif",
+//             "description": "just programing, longer duration",
+//             "random_replay": Infinity
+//         },
+//         {
+//             "title": "thinking",
+//             "duration": 20,
+//             "preview": "imgs/preview.gif",
+//             "img": "imgs/K-Tap-Scratch.gif",
+//             "description": "scratches head while thinking",
+//             "random_replay": Infinity
+//         },
+//         {
+//             "title": "drinking-1",
+//             "duration": 20,
+//             "preview": "imgs/preview.gif",
+//             "img": "imgs/K-Tap-Drinking.gif",
+//             "description": "drinks something",
+//             "random_replay": Infinity
+//         },
+//         {
+//             "title": "drinking-2",
+//             "duration": 20,
+//             "preview": "imgs/preview.gif",
+//             "img": "imgs/K-Tap-Drinking-2.gif",
+//             "description": "is taping then starts drinking then spits it out",
+//             "random_replay": Infinity
+//         }
+//     ]
+// };
+
+
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        define([], factory);
+    } else if (typeof exports === 'object') {
+        module.exports = factory();
+    } else {
+        root.GifTheater = factory();
+    }
+}(this, function () {
+    var GifTheater = function (screenplay) {
+
+        //Obj holding all the movie SuperGifs
+        var movieGifs = [];
+        var defaultScreenClass = screenplay.screen_class;
+        var screenId = screenplay.screen_id;
+        var sceneTitleArrayLoc = {}; //A dictionary that given a scene title will locate its location in o(1) time
+        var scenes = screenplay.scenes;
+        var isRandomPlayOn = screenplay.random_play;
+        var sceneCounter = {};  //Keeps track of how many times a screen has been displayed
+        var currentSceneLoc = 0;
+
+       //TODO: needs a screen play verification function to verify screen play is accurate
+
+        //Generic Functions
+        var newScene = function (screenClass, screenId, scene, arrayLoc) {
+            let elem = document.createElement("img");
+            let newId = generateSceneId(screenId, arrayLoc);
+            elem.setAttribute("id", newId);
+            elem.setAttribute("src", scene.preview);
+            //elem.setAttribute("height", "768");
+            //elem.setAttribute("width", "1024");
+            try {
+                if (scene.starting_scene === true) {
+                    elem.setAttribute("class", screenClass);
+                } else {
+                    elem.setAttribute("class", screenClass + " hide");
+                }
+            } catch (e) {
+                if (i === 0) {
+                    elem.setAttribute("class", screenClass);
+                } else {
+                    elem.setAttribute("class", screenClass + " hide");
+                }
+            }
+
+            elem.setAttribute("rel:auto_play", "0");
+            elem.setAttribute("rel:animated_src", scene.img);
+            elem.setAttribute("alt", scene.title);
+            document.getElementById(screenId).appendChild(elem);
+            return newId
+        };
+
+        var switchScenes = function (previousSceneElementId, NewSceneElementId) {
+            console.log("Switching Scenes now");
+            let prevScene = document.getElementById(previousSceneElementId);
+            let nextScene = document.getElementById(NewSceneElementId);
+            prevScene.classList.add("hide");
+            nextScene.classList.remove("hide")
+        };
+
+        var generateSceneId = function (screen_id, arrayLoc) {
+            return screen_id + "Scene" + arrayLoc.toString()
+        };
+
+        var playNext = function () {
+            let nextSceneLoc = 0;
+            let currentScene = scenes[currentSceneLoc];
+            console.log("Play next scene");
+
+            if (isRandomPlayOn === true) {
+                console.log("Picking a random scene to play next");
+                if (sceneCounter[currentScene.title] === undefined) {
+                    sceneCounter[currentScene.title] = 1;
+                } else {
+                    sceneCounter[currentScene.title] += 1;
+                }
+                console.log(sceneCounter);
+                console.log(currentScene);
+                while (true) {
+                    //TODO: Logic here is broken and needs to be fixed, we want to make sure random doesnt play the same scene twice
+                    console.log("in loop");
+                    nextSceneLoc = Math.floor(Math.random() * scenes.length);
+                    break;
+                    //Fixme: find the righ logic for this
+                    nextScene = scenes[nextSceneLoc];
+
+                    if (nextSceneLoc.random_replay === Infinity && nextSceneLoc !== currentSceneLoc) {
+                        break
+                    } else if (sceneCounter[nextScene.title] < nextScene.random_replay && nextSceneLoc !== currentSceneLoc) {
+                        break
+                    }
+                    console.log("re picking")
+                }
+
+            } else {
+                nextSceneLoc = sceneTitleArrayLoc[movieGifs[currentSceneLoc].next_scene]
+            }
+            let nextSceneElemId = generateSceneId(screenplay.screen_id, nextSceneLoc);
+            let currentSceneElemId = generateSceneId(screenplay.screen_id, currentSceneLoc);
+
+            movieGifs[currentSceneLoc].pause();
+            switchScenes(currentSceneElemId, nextSceneElemId);
+            currentSceneLoc = nextSceneLoc;
+            movieGifs[currentSceneLoc].play();
+        };
+
+        // For gif in gif movie create a canvas for every gif
+        // load all the canvas but hide everything but the first one
+        for (let i = 0; i < scenes.length; i++) {
+            //Add the scenes id
+            sceneTitleArrayLoc[scenes[i].id] = i;
+            //Set the starting scene according to whats in the screen play.
+            try {
+                if (scenes[i].starting_scene === true) {
+                    currentSceneLoc = i;
+                }
+            } catch (e) {
+                continue
+            }
+            // Create an element inside the GifTheaterScreen
+            var newId = newScene(defaultScreenClass, screenId, scenes[i], i);
+
+            // The element will be whats passed in allowing someone to have multiple screens
+
+            // Make it a SuperGif
+            movieGifs[i] = new SuperGif({gif: document.getElementById(newId), on_end: playNext});
+        }
+
+
+        return {
+            // play controls
+
+            getCurrentScene: function () {
+            },
+            pause: movieGifs[currentSceneLoc].pause,
+            start: movieGifs[currentSceneLoc].play,
+            nextScene: function () {
+            },
+            //startSceneOver : movieGifs[currentSceneLoc].move_to(0),
+            previouseScene: function () {
+            },
+            // getters for instance vars
+            LoadMovie: function (finishedLoadingCallback = function () {
+                console.log("Finished loading gif movie");
+                movieGifs[currentSceneLoc].play();
+            }) {
+                let loadCount = 0;
+                for (let i = 0; i < movieGifs.length; i++) {
+                    // Load the SuperGif
+                    movieGifs[i].load(function () {
+                        loadCount += 1;
+                        if (loadCount === movieGifs.length) {
+                            //call Finished Loading callback
+                            finishedLoadingCallback()
+                        }
+                    })
+                }
+            },
+
+        };
+    };
+
+    return GifTheater;
+}));
+
+
+
 /*
 	SuperGif
-
 	Example usage:
-
 		<img src="./example1_preview.gif" rel:animated_src="./example1.gif" width="360" height="360" rel:auto_play="1" />
-
 		<script type="text/javascript">
 			$$('img').each(function (img_tag) {
 				if (/.*\.gif/.test(img_tag.src)) {
@@ -13,16 +238,11 @@
 				}
 			});
 		</script>
-
 	Image tag attributes:
-
 		rel:animated_src -	If this url is specified, it's loaded into the player instead of src.
 							This allows a preview frame to be shown until animated gif data is streamed into the canvas
-
 		rel:auto_play -		Defaults to 1 if not specified. If set to zero, a call to the play() method is needed
-
 	Constructor options args
-
 		gif 				Required. The DOM element of an img tag.
 		loop_mode			Optional. Setting this to false will force disable looping of the gif.
 		auto_play 			Optional. Same as the rel:auto_play attribute above, this arg overrides the img tag info.
@@ -31,19 +251,15 @@
 		loop_delay			Optional. The amount of time to pause (in ms) after each single loop (iteration).
 		draw_while_loading	Optional. Determines whether the gif will be drawn to the canvas whilst it is loaded.
 		show_progress_bar	Optional. Only applies when draw_while_loading is set to true.
-
 	Instance methods
-
 		// loading
 		load( callback )		Loads the gif specified by the src or rel:animated_src sttributie of the img tag into a canvas element and then calls callback if one is passed
 		load_url( src, callback )	Loads the gif file specified in the src argument into a canvas element and then calls callback if one is passed
-
 		// play controls
 		play -				Start playing the gif
 		pause -				Stop playing the gif
 		move_to(i) -		Move to frame i of the gif
 		move_relative(i) -	Move i frames ahead (or behind if i < 0)
-
 		// getters
 		get_canvas			The canvas element that the gif is playing in. Handy for assigning event handlers to.
 		get_playing			Whether or not the gif is currently playing
@@ -51,16 +267,13 @@
 		get_auto_play		Whether or not the gif is set to play automatically
 		get_length			The number of frames in the gif
 		get_current_frame	The index of the currently displayed frame of the gif
-
 		For additional customization (viewport inside iframe) these params may be passed:
 		c_w, c_h - width and height of canvas
 		vp_t, vp_l, vp_ w, vp_h - top, left, width and height of the viewport
-
 		A bonus: few articles to understand what is going on
 			http://enthusiasms.org/post/16976438906
 			http://www.matthewflickinger.com/lab/whatsinagif/bits_and_bytes.asp
 			http://humpy77.deviantart.com/journal/Frame-Delay-Times-for-Animated-GIFs-214150546
-
 */
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -81,7 +294,7 @@
     var byteToBitArr = function (bite) {
         var a = [];
         for (var i = 7; i >= 0; i--) {
-            a.push( !! (bite & (1 << i)));
+            a.push(!!(bite & (1 << i)));
         }
         return a;
     };
@@ -90,43 +303,43 @@
     /**
      * @constructor
      */
-    // Make compiler happy.
+        // Make compiler happy.
     var Stream = function (data) {
-        this.data = data;
-        this.len = this.data.length;
-        this.pos = 0;
+            this.data = data;
+            this.len = this.data.length;
+            this.pos = 0;
 
-        this.readByte = function () {
-            if (this.pos >= this.data.length) {
-                throw new Error('Attempted to read past end of stream.');
-            }
-            if (data instanceof Uint8Array)
-                return data[this.pos++];
-            else
-                return data.charCodeAt(this.pos++) & 0xFF;
-        };
+            this.readByte = function () {
+                if (this.pos >= this.data.length) {
+                    throw new Error('Attempted to read past end of stream.');
+                }
+                if (data instanceof Uint8Array)
+                    return data[this.pos++];
+                else
+                    return data.charCodeAt(this.pos++) & 0xFF;
+            };
 
-        this.readBytes = function (n) {
-            var bytes = [];
-            for (var i = 0; i < n; i++) {
-                bytes.push(this.readByte());
-            }
-            return bytes;
-        };
+            this.readBytes = function (n) {
+                var bytes = [];
+                for (var i = 0; i < n; i++) {
+                    bytes.push(this.readByte());
+                }
+                return bytes;
+            };
 
-        this.read = function (n) {
-            var s = '';
-            for (var i = 0; i < n; i++) {
-                s += String.fromCharCode(this.readByte());
-            }
-            return s;
-        };
+            this.read = function (n) {
+                var s = '';
+                for (var i = 0; i < n; i++) {
+                    s += String.fromCharCode(this.readByte());
+                }
+                return s;
+            };
 
-        this.readUnsigned = function () { // Little-endian.
-            var a = this.readBytes(2);
-            return (a[1] << 8) + a[0];
+            this.readUnsigned = function () { // Little-endian.
+                var a = this.readBytes(2);
+                return (a[1] << 8) + a[0];
+            };
         };
-    };
 
     var lzwDecode = function (minCodeSize, data) {
         // TODO: Now that the GIF parser is a bit different, maybe this should get an array of bytes instead of a String?
@@ -179,8 +392,7 @@
                 if (last !== clearCode) {
                     dict.push(dict[last].concat(dict[code][0]));
                 }
-            }
-            else {
+            } else {
                 if (code !== dict.length) throw new Error('Invalid LZW code.');
                 dict.push(dict[last].concat(dict[last][0]));
             }
@@ -419,7 +631,7 @@
         parse();
     };
 
-    var SuperGif = function ( opts ) {
+    var SuperGif = function (opts) {
         var options = {
             //viewport position
             vp_l: 0,
@@ -430,7 +642,9 @@
             c_w: null,
             c_h: null
         };
-        for (var i in opts ) { options[i] = opts[i] }
+        for (var i in opts) {
+            options[i] = opts[i]
+        }
         if (options.vp_w && options.vp_h) options.is_vp = true;
 
         var stream;
@@ -481,8 +695,7 @@
         var doParse = function () {
             try {
                 parseGIF(stream, handler);
-            }
-            catch (err) {
+            } catch (err) {
                 doLoadError('parse');
             }
         };
@@ -492,10 +705,10 @@
             toolbar.style.visibility = 'visible';
         };
 
-        var setSizes = function(w, h) {
+        var setSizes = function (w, h) {
             canvas.width = w * get_canvas_scale();
             canvas.height = h * get_canvas_scale();
-            toolbar.style.minWidth = ( w * get_canvas_scale() ) + 'px';
+            toolbar.style.minWidth = (w * get_canvas_scale()) + 'px';
 
             tmpCanvas.width = w;
             tmpCanvas.height = h;
@@ -504,7 +717,7 @@
             tmpCanvas.getContext('2d').setTransform(1, 0, 0, 1, 0, 0);
         };
 
-        var setFrameOffset = function(frame, offset) {
+        var setFrameOffset = function (frame, offset) {
             if (!frameOffsets[frame]) {
                 frameOffsets[frame] = offset;
                 return;
@@ -531,7 +744,7 @@
                     } else {
                         top = (options.vp_t + options.vp_h - height) / get_canvas_scale();
                         height = height / get_canvas_scale();
-                        left = (options.vp_l / get_canvas_scale() );
+                        left = (options.vp_l / get_canvas_scale());
                         mid = left + (pos / length) * (options.vp_w / get_canvas_scale());
                         width = canvas.width / get_canvas_scale();
                     }
@@ -541,17 +754,16 @@
                             var l = options.vp_l, t = options.vp_t;
                             var w = options.vp_w, h = options.vp_h;
                         } else {
-                            var l = options.vp_l/get_canvas_scale(), t = options.vp_t/get_canvas_scale();
-                            var w = options.vp_w/get_canvas_scale(), h = options.vp_h/get_canvas_scale();
+                            var l = options.vp_l / get_canvas_scale(), t = options.vp_t / get_canvas_scale();
+                            var w = options.vp_w / get_canvas_scale(), h = options.vp_h / get_canvas_scale();
                         }
-                        ctx.rect(l,t,w,h);
+                        ctx.rect(l, t, w, h);
                         ctx.stroke();
                     }
-                }
-                else {
+                } else {
                     top = (canvas.height - height) / (ctx_scaled ? get_canvas_scale() : 1);
                     mid = ((pos / length) * canvas.width) / (ctx_scaled ? get_canvas_scale() : 1);
-                    width = canvas.width / (ctx_scaled ? get_canvas_scale() : 1 );
+                    width = canvas.width / (ctx_scaled ? get_canvas_scale() : 1);
                     height /= ctx_scaled ? get_canvas_scale() : 1;
                 }
 
@@ -602,10 +814,10 @@
         var pushFrame = function () {
             if (!frame) return;
             frames.push({
-                            data: frame.getImageData(0, 0, hdr.width, hdr.height),
-                            delay: delay
-                        });
-            frameOffsets.push({ x: 0, y: 0 });
+                data: frame.getImageData(0, 0, hdr.width, hdr.height),
+                delay: delay
+            });
+            frameOffsets.push({x: 0, y: 0});
         };
 
         var doImg = function (img) {
@@ -619,7 +831,6 @@
             /*
             Disposal method indicates the way in which the graphic is to
             be treated after being displayed.
-
             Values :    0 - No disposal specified. The decoder is
                             not required to take any action.
                         1 - Do not dispose. The graphic is to be left
@@ -629,7 +840,6 @@
                         3 - Restore to previous. The decoder is required to
                             restore the area overwritten by the graphic with
                             what was there prior to rendering the graphic.
-
                             Importantly, "previous" means the frame state
                             after the last disposal of method 0, 1, or 2.
             */
@@ -639,9 +849,9 @@
                     // If we disposed every frame including first frame up to this point, then we have
                     // no composited frame to restore to. In this case, restore to background instead.
                     if (disposalRestoreFromIdx !== null) {
-                    	frame.putImageData(frames[disposalRestoreFromIdx].data, 0, 0);
+                        frame.putImageData(frames[disposalRestoreFromIdx].data, 0, 0);
                     } else {
-                    	frame.clearRect(lastImg.leftPos, lastImg.topPos, lastImg.width, lastImg.height);
+                        frame.clearRect(lastImg.leftPos, lastImg.topPos, lastImg.width, lastImg.height);
                     }
                 } else {
                     disposalRestoreFromIdx = currIdx - 1;
@@ -674,7 +884,7 @@
             frame.putImageData(imgData, img.leftPos, img.topPos);
 
             if (!ctx_scaled) {
-                ctx.scale(get_canvas_scale(),get_canvas_scale());
+                ctx.scale(get_canvas_scale(), get_canvas_scale());
                 ctx_scaled = true;
             }
 
@@ -752,11 +962,11 @@
                 var offset;
                 i = parseInt(i, 10);
 
-                if (i > frames.length - 1){
+                if (i > frames.length - 1) {
                     i = 0;
                 }
 
-                if (i < 0){
+                if (i < 0) {
                     i = 0;
                 }
 
@@ -781,14 +991,13 @@
                 init: function () {
                     if (loadError) return;
 
-                    if ( ! (options.c_w && options.c_h) ) {
-                        ctx.scale(get_canvas_scale(),get_canvas_scale());
+                    if (!(options.c_w && options.c_h)) {
+                        ctx.scale(get_canvas_scale(), get_canvas_scale());
                     }
 
                     if (options.auto_play) {
                         step();
-                    }
-                    else {
+                    } else {
                         i = 0;
                         putFrame();
                     }
@@ -798,9 +1007,13 @@
                 pause: pause,
                 playing: playing,
                 move_relative: stepFrame,
-                current_frame: function() { return i; },
-                length: function() { return frames.length },
-                move_to: function ( frame_idx ) {
+                current_frame: function () {
+                    return i;
+                },
+                length: function () {
+                    return frames.length
+                },
+                move_to: function (frame_idx) {
                     i = frame_idx;
                     putFrame();
                 }
@@ -811,7 +1024,8 @@
             doShowProgress(stream.pos, stream.data.length, draw);
         };
 
-        var doNothing = function () {};
+        var doNothing = function () {
+        };
         /**
          * @param{boolean=} draw Whether to draw progress bar or not; this is not idempotent because of translucency.
          *                       Note that this means that the text will be unsynchronized with the progress bar on non-frames;
@@ -839,7 +1053,7 @@
                 //toolbar.style.display = '';
                 pushFrame();
                 doDecodeProgress(false);
-                if ( ! (options.c_w && options.c_h) ) {
+                if (!(options.c_w && options.c_h)) {
                     canvas.width = hdr.width * get_canvas_scale();
                     canvas.height = hdr.height * get_canvas_scale();
                 }
@@ -875,15 +1089,14 @@
             parent.removeChild(gif);
 
             if (options.c_w && options.c_h) setSizes(options.c_w, options.c_h);
-            initialized=true;
+            initialized = true;
         };
 
-        var get_canvas_scale = function() {
+        var get_canvas_scale = function () {
             var scale;
             if (options.max_width && hdr && hdr.width > options.max_width) {
                 scale = options.max_width / hdr.width;
-            }
-            else {
+            } else {
                 scale = 1;
             }
             return scale;
@@ -893,7 +1106,7 @@
         var initialized = false;
         var load_callback = false;
 
-        var load_setup = function(callback) {
+        var load_setup = function (callback) {
             if (loading) return false;
             if (callback) load_callback = callback;
             else load_callback = false;
@@ -917,14 +1130,28 @@
             move_to: player.move_to,
 
             // getters for instance vars
-            get_playing      : function() { return playing },
-            get_canvas       : function() { return canvas },
-            get_canvas_scale : function() { return get_canvas_scale() },
-            get_loading      : function() { return loading },
-            get_auto_play    : function() { return options.auto_play },
-            get_length       : function() { return player.length() },
-            get_current_frame: function() { return player.current_frame() },
-            load_url: function(src,callback){
+            get_playing: function () {
+                return playing
+            },
+            get_canvas: function () {
+                return canvas
+            },
+            get_canvas_scale: function () {
+                return get_canvas_scale()
+            },
+            get_loading: function () {
+                return loading
+            },
+            get_auto_play: function () {
+                return options.auto_play
+            },
+            get_length: function () {
+                return player.length()
+            },
+            get_current_frame: function () {
+                return player.current_frame()
+            },
+            load_url: function (src, callback) {
                 if (!load_setup(callback)) return;
 
                 var h = new XMLHttpRequest();
@@ -945,11 +1172,11 @@
                     h.setRequestHeader('Accept-Charset', 'x-user-defined');
                 }
 
-                h.onloadstart = function() {
+                h.onloadstart = function () {
                     // Wait until connection is opened to replace the gif element with a canvas to avoid a blank img
                     if (!initialized) init();
                 };
-                h.onload = function(e) {
+                h.onload = function (e) {
                     if (this.status != 200) {
                         doLoadError('xhr - response');
                     }
@@ -968,13 +1195,15 @@
                 h.onprogress = function (e) {
                     if (e.lengthComputable) doShowProgress(e.loaded, e.total, true);
                 };
-                h.onerror = function() { doLoadError('xhr'); };
+                h.onerror = function () {
+                    doLoadError('xhr');
+                };
                 h.send();
             },
             load: function (callback) {
-                this.load_url(gif.getAttribute('rel:animated_src') || gif.src,callback);
+                this.load_url(gif.getAttribute('rel:animated_src') || gif.src, callback);
             },
-            load_raw: function(arr, callback) {
+            load_raw: function (arr, callback) {
                 if (!load_setup(callback)) return;
                 if (!initialized) init();
                 stream = new Stream(arr);
@@ -986,5 +1215,4 @@
 
     return SuperGif;
 }));
-
 
