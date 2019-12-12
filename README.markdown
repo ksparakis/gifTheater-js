@@ -1,14 +1,13 @@
 # Overview
 
-Forked from the excelent jsgif project (https://github.com/shachaf/jsgif), which was implemented as a bookmarklet to manipulate animated gifs (http://slbkbs.org/jsgif).
+Forked from the libgif-js (https://github.com/buzzfeed/libgif-js), which is a buzzfeed library to manipulate animated gifs (http://slbkbs.org/jsgif).
 
-This is an attempt to pull out the gif parsing and playing logic, seperate it from the bookmarklet, and publish it as a library that you can use in your project.
-
-As an added bonus, you can make gifs "rubbable" so that scrubbing with your mouse (or rubbing with your finger on a touch device) cause the gif to move back and forth.
+gifTheater builds ontop of this to give users the ability to create a screenplay, to automatically play multiple gifs one after another in a predetermined or random order. This allows you to create movies based soley from gifs, each gif acting like a scene of the movie.
 
 # Example
+Example of GifTheater usage is comming soon...
 
-Please see example.html for, you know, an example. This will demonstrate how to use basic play controls for a gif, and also a rubbable one.
+Please see example.html for an example of SuperGif. This will demonstrate how to use basic play controls for a gif, and also a rubbable one.
 
 Please note: this example must be loaded via a webserver, not directly from disk. I.e. http://localhost/libgif-js/example.html NOT file:///libgif-js/example.html. See the same-domain origin caveat at the bottom of this document for more information.
 
@@ -16,9 +15,14 @@ For a hosted example, check out this post on BuzzFeed.com (http://www.buzzfeed.c
 
 # Technical Details
 
-Of note to the developer, libjs.gif contains a class SuperGif, which can be used to manipulate animated gifs.
+
+## Class: GifTheater
+
+## Example Usage:
+Details Comming Soon.
 
 ## Class: SuperGif
+Of note to the developer, libjs.gif contains a class SuperGif, which can be used to manipulate animated gifs.
 
 ### Example usage:
 
@@ -85,3 +89,10 @@ Of note to the developer, libjs.gif contains a class SuperGif, which can be used
 The gif has to be on the same domain (and port and protocol) as the page you're loading.
 
 The library works by parsing gif image data in js, extracting individual frames, and rendering them on a canvas element. There is no way to get the raw image data from a normal image load, so this library does an XHR request for the image and forces the MIME-type to "text/plain". Consequently, using this library is subject to all the same cross-domain restrictions as any other XHR request.
+
+## #TODO
+- Update documentation to include how to use GifTheater
+- Add Example of Gif Theater in use
+- Add Screen play verification function
+- fix logic for not replaying same movie twice in random
+- add logic for branching into subscenes
